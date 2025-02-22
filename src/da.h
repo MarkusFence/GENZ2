@@ -27,6 +27,8 @@ uint16_t disableOut = 0x2000;
 uint16_t cntrlReg_cur = 0x3006;
 uint16_t dataReg_cur = 0xFFFF;
 
+int cursorPosition = 1;
+
 int voltVal1 = 0;
 int voltVal2 = 0;
 
@@ -37,11 +39,16 @@ int currVal2 = 0;
 float voltageValue = 0; // Initial voltage value
 float minVoltage = 00.00;
 float maxVoltage = 10.00;
-int cursorPosition = 1; // Represents the digit being modified (0 - tens, 1 - ones, 2 - tenths, 3 - hundredths)
 
-float currentValue = 20;
-float minCurrent = 00.00;
-float maxCurrent = 20.00;
+
+int currentValue = 20;
+int minCurrent = 0;
+int maxCurrent = 20;
+
+
+int currentValue2 = 99;
+int minCurrent2 = 0;
+int maxCurrent2 = 99;
 
 void outVolt(uint16_t contReg_V, uint32_t voltageOut)
 {
