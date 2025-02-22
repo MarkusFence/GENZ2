@@ -260,38 +260,27 @@ void page_CurrSettings(void)
 
     //setting current values 
     if(lastCount != counter){
+      
       if(lastCount < counter){ 
         if(lastCount < counter && (lastCount + 10) < counter){
-          cursorPosition == 1 ? currVal1 += 10 : currVal2 +=10;
+          cursorPosition == 1 ? currVal1 += 10 : currVal2 += 10;
             
         }else{cursorPosition == 1 ? currVal1++ : currVal2++;}     
   
       }
       else { 
         if(lastCount > counter && (lastCount -10) > counter){
-          cursorPosition == 1 ? currVal1 -= 10 : currVal2 -=10;
+          cursorPosition == 1 ? currVal1 -= 10 : currVal2 -= 10;
 
         }else{cursorPosition == 1 ? currVal1-- : currVal2--;} 
-
       }
-      if(currVal1 >= 20 && currVal2 >= 0)
-        {currVal2 = 0;}
 
-      else if (currVal2 > 99){ 
-        currVal1++;
-        if(currVal1 >= 20){currVal2 = 0;}
-        
-      }
       
-      if (currVal2 < 0 || currVal1 <= 0){ 
-        currVal1--;
-        
-        if(currVal1 <= 0){currVal2 = 0;}
-        else{currVal2 = 99;}
-      }
+      
 
       // Ensure the value stays within the specified limits
       currVal1 = constrain(currVal1, minCurrent, maxCurrent);
+      currVal2 = constrain(currVal2, minCurrent2, maxCurrent2);
       lastCount = counter;
       updateDisplay = true;
     }
