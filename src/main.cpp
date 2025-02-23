@@ -7,13 +7,15 @@
 //#include "avr_debugger.h"
 //#include "avr8-stub.h"
 //#include "app_api.h"
-//#include "deb.h"
+#include "deb.h"
 
 #define Debbug
 #ifdef Debbug
   //while not in use, comment also Seial.being 
   #define PRINT(t) (Serial.println((t)))
- 
+  boolean debbug = true;
+#else
+  boolean debbug = false;
 #endif
 
 #include "btnPins.h"
@@ -21,7 +23,6 @@
 #include "encoder.h"
 #include "dispGra.h"
 
-//git repo test 
 
 //==========================================================================//
 //------------------------- DISLPAY SETUP
@@ -39,21 +40,11 @@ enum pageType { VOLT_SETTINGS, CURR_SETTINGS };
 // holds witch page is currently selected
 enum pageType currPage = CURR_SETTINGS;
 
-
-
 //declaration of functions
 void page_VoltSettings (void);
 void page_CurrSettings (void);
 
 int lastCount;
-
-
-int digit_set(int a);
-
-char buffer[10];
-char buffer1[10];
-
-
 
 //==========================================================================//
 //-------------------------ARDUINO SETUP
@@ -90,10 +81,6 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENC_A), read_encoder, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENC_B), read_encoder, CHANGE);
 
-  // sprintf(buffer,"%05.2f",01.23);
-  // dtostrf(1.23, 5, 1, buffer1);
-  // Serial.println(buffer);
-  // Serial.println(buffer1);
 }
 
 //==========================================================================//
@@ -137,7 +124,7 @@ void page_VoltSettings(void)
         //display.setTextColor(WHITE,BLACK);
         display.setTextSize(2);
         display.setCursor(12, 10);
-        display.print(voltVal1);
+        display.print(voltage_value);
         //display.print(voltageValue);
         
         display.setTextSize(1);
@@ -148,7 +135,7 @@ void page_VoltSettings(void)
       }
   
     captureButtonDownStates();
-    voltageValue = constrain(voltageValue, minVoltage, maxVoltage);
+    //voltageValue = constrain(voltageValue, minVoltage, maxVoltage);
     // looks for the press release action for OK
     if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
@@ -194,43 +181,50 @@ void page_CurrSettings(void)
 {
   // flag for updete dislay
   boolean updateDisplay = true;
+  boolean enable_output = false;
   // track when entered top of loop
   uint32_t loopStartMs;
 
+
   // inner loop
-  while (true)
+  while(true)
   {
     loopStartMs = millis(); 
-
+    //display Graphics
     if (updateDisplay)
     {
       updateDisplay = false;
       
-      //display print l
+      int digit_1;
+      float digit_2;
+
+      digit_1 = (int)current_value;
+      digit_2 = ((float)current_value - digit_1) * 100; 
+
       display.clearDisplay();
-      // display.setTextColor(WHITE,BLACK);
+      //display.setTextColor(WHITE,BLACK);
 
       display.setTextSize(3);
-
-      if(currVal1 <= 9){
+      
+      if(digit_1 <= 9){
       display.setCursor(0, 0);
       display.print("0");
       display.setCursor(18, 0);
-      display.print(currVal1);
+      display.print(digit_1);
       }else{
       display.setCursor(0, 0);
-      display.print(currVal1);
+      display.print(digit_1);
       }
 
-      if(currVal2 <= 9){
+      if(digit_2 <= 9){
       display.setCursor(48, 0);
       display.print("0");
       display.setCursor(66, 0);
-      display.print(currVal2);
+      display.print((int)digit_2);
       display.setCursor(0, 0);
       }else{
       display.setCursor(48, 0);
-      display.print(currVal2);
+      display.print((int)digit_2);
       }
 
       display.setTextSize(2);
@@ -250,48 +244,53 @@ void page_CurrSettings(void)
       display.display();
     }
 
+    
+    int last_value_change = true; //memory, previous value capture
+    if (enable_output && last_value_change){
+
+      calculate_hex();
+      signal_output(set_current_mode[1], &current_value_hex);
+
+
+    }
+
+
     captureButtonDownStates();
-      // PRINT(counter);
-      // PRINT(lastCount);
-      // // PRINT(updateDisplay);
-      // PRINT(" ");
-      // PRINT(" ");
-      // PRINT(" ");
 
     //setting current values 
     if(lastCount != counter){
       
       if(lastCount < counter){ 
         if(lastCount < counter && (lastCount + 10) < counter){
-          cursorPosition == 1 ? currVal1 += 10 : currVal2 += 10;
+          cursorPosition == 1 ? current_value += 10 : current_value += 0.1;
             
-        }else{cursorPosition == 1 ? currVal1++ : currVal2++;}     
+        }else{cursorPosition == 1 ? current_value++ : current_value += 0.01;}     
   
       }
       else { 
         if(lastCount > counter && (lastCount -10) > counter){
-          cursorPosition == 1 ? currVal1 -= 10 : currVal2 -= 10;
+          cursorPosition == 1 ? current_value -= 10 : current_value -= 0.1;
 
-        }else{cursorPosition == 1 ? currVal1-- : currVal2--;} 
+        }else{cursorPosition == 1 ? current_value-- : current_value -= 0.01;} 
       }
       // Ensure the value stays within the specified limits
-      currVal1 = constrain(currVal1, minCurrent, maxCurrent);
-      currVal2 = constrain(currVal2, minCurrent2, maxCurrent2);
+      current_value = constrain(current_value, minCurrent, maxCurrent);
       lastCount = counter;
       updateDisplay = true;
     }
-
+    
     // looks for the press release action for OK
     if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
       cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
       updateDisplay = true;
       btn_Digit_WasDown = false;
+      
     }
-
+    
     if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
-      
+      enable_output ? enable_output = false : enable_output = true;
 
 
 
@@ -314,7 +313,18 @@ void page_CurrSettings(void)
     // keep a specific page
     while (millis() - loopStartMs < 25)
     {
-      delay(2);
+      delay(200);
+    }
+
+    //PRINT debbug section 
+    PRINT(enable_output);
+    PRINT(current_value);
+    PRINT(current_value_hex);
+
+    if(debbug){
+      for(int i = 0; i <= 2; i++){
+        PRINT(" ");
+      }
     }
   }
 }

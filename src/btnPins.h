@@ -4,6 +4,10 @@ const char BTN_DIGIT = A0;
 const char BTN_CHANGE = A1;
 const char BTN_OUT_EN = A2;
 
+const char BTN_error = A7;
+const char BTN_sense_voltage = A6;
+const char BTN_sense_current = A5;
+
 
 boolean btn_Digit_WasDown = false;
 boolean btn_Change_WasDown = false;
