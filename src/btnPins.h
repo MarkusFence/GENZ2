@@ -1,12 +1,12 @@
 #include <Arduino.h>
 
-const char BTN_DIGIT = A0;
-const char BTN_CHANGE = A1;
-const char BTN_OUT_EN = A2;
+const char BTN_DIGIT = A2; // temporary swap A0 >> A2
+const char BTN_CHANGE = A1; 
+const char BTN_OUT_EN = A0;
 
-const char BTN_error = A7;
+const char BTN_error = A5;
 const char BTN_sense_voltage = A6;
-const char BTN_sense_current = A5;
+const char BTN_sense_current = A7;
 
 
 boolean btn_Digit_WasDown = false;

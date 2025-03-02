@@ -31,8 +31,8 @@ uint16_t MAX_current_value = 0xFFFF; //max current value
 uint16_t MAX_voltage_value = 0xFFFF; //max voltage value
 
 //value off-set
-volatile float voltage_value = 03.39f;
-volatile float current_value = 10.00f;
+volatile float voltage_value = 00.00f;
+volatile float current_value = 00.00f;
 
 //voltage limits
 const int minVoltage = -10;
@@ -59,7 +59,9 @@ void AD_security_feature(void){
 }
 
 void signal_output(uint16_t mode_option,volatile uint32_t *signal_value){
-
+  
+  calculate_hex();
+  
   //1. is needed to set control register (operation)
   digitalWrite(SS, LOW);
   SPI.transfer(operation_set_mode);

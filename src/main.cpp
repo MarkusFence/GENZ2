@@ -38,7 +38,7 @@ Adafruit_PCD8544 display = Adafruit_PCD8544(6, 5, 4);
 enum pageType { VOLT_SETTINGS, CURR_SETTINGS };
 
 // holds witch page is currently selected
-enum pageType currPage = CURR_SETTINGS;
+enum pageType currPage = VOLT_SETTINGS;
 
 //declaration of functions
 void page_VoltSettings (void);
@@ -106,10 +106,13 @@ void page_VoltSettings(void)
 {
   // flag for updete dislay
   boolean updateDisplay = true;
+  boolean enable_output = false;
+  boolean last_value_change = true; //memory, previous value capture
+
   // track when entered top of loop
   uint32_t loopStartMs;
-
   // inner loop
+  // 
   while (true)
   {
     loopStartMs = millis();   // capture start time
@@ -117,41 +120,130 @@ void page_VoltSettings(void)
       if (updateDisplay)
       {
         updateDisplay = false;
-
-        // display print l
         display.clearDisplay();
-
         //display.setTextColor(WHITE,BLACK);
-        display.setTextSize(2);
-        display.setCursor(12, 10);
-        display.print(voltage_value);
-        //display.print(voltageValue);
+
         
+        int v_digit_1;
+        float v_digit_2;
+        float tempV = voltage_value;
+
+        if(voltage_value < 0){
+          tempV *= -1;
+          // minus graphic
+          display.drawLine(0, 10, 4, 10, BLACK);
+          display.drawLine(0, 11, 4, 11, BLACK);
+        };
+
+        //digit calculation before print
+        v_digit_1 = (int)tempV;
+        v_digit_2 = ((float)tempV - v_digit_1) * 100; 
+        
+        display.setTextSize(3);
+        
+        if(v_digit_1 <= 9){
+          display.setCursor(7, 0);
+          display.print("0");
+          display.setCursor(25, 0);
+          display.print(v_digit_1);
+        }else{
+          display.setCursor(7, 0);
+          display.print(v_digit_1);
+        }
+
+        if(v_digit_2 <= 9){
+          display.setCursor(48, 0);
+          display.print("0");
+          display.setCursor(66, 0);
+          display.print((int)v_digit_2);
+          display.setCursor(0, 0);
+        }else{
+          display.setCursor(48, 0);
+          display.print((int)v_digit_2);
+        } //dot graphic
+          display.setTextSize(2);
+          display.setCursor(38, 8);
+          display.print(".");
+          //source option
+          display.setCursor(72, 32);
+          display.print("V");
+        
+        if(cursorPosition == 1){
+          display.drawLine(24, 24, 39, 24, BLACK);
+        }
+        else{
+          display.drawLine(66, 24, 81, 24 ,BLACK);
+        }
+
         display.setTextSize(1);
-        display.setCursor(72, 16);
-        display.print("mV");
+        if(enable_output){
+          display.fillCircle( 6, 41, 6, BLACK);
+        }else{
+          display.drawCircle( 6, 41, 6, BLACK);
+        }
+        signal_output(set_bi_volage_mode, &voltage_value_hex);
+        //PRINT debbug section 
+        PRINT(tempV);
+        PRINT(voltage_value);
+        PRINT(voltage_value_hex);
+        PRINT(enable_output);
+
+        for(int i = 0; i > 10; i++)
+        PRINT(" ");
 
         display.display();
       }
   
     captureButtonDownStates();
-    //voltageValue = constrain(voltageValue, minVoltage, maxVoltage);
-    // looks for the press release action for OK
+   
+    //setting current values 
+    if(lastCount != counter){
+      
+      if(lastCount < counter){ 
+        if(lastCount < counter && (lastCount + 10) < counter){
+          cursorPosition == 1 ? voltage_value += 10 : voltage_value += 0.1;
+            
+        }else{cursorPosition == 1 ? voltage_value++ : voltage_value += 0.01;}     
+  
+      }
+      else { 
+        if(lastCount > counter && (lastCount -10) > counter){
+          cursorPosition == 1 ? voltage_value -= 10 : voltage_value -= 0.1;
+
+        }else{cursorPosition == 1 ? voltage_value-- : voltage_value -= 0.01;} 
+      }
+      // Ensure the value stays within the specified limits
+      voltage_value = constrain(voltage_value, minVoltage, maxVoltage);
+      lastCount = counter;
+      updateDisplay = true;
+    }
+    
+    //
+    if (enable_output && last_value_change){
+
+      
+      signal_output(set_bi_volage_mode, &voltage_value_hex);
+
+
+    }
+
+    // 
     if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
-
+      cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
       updateDisplay = true;
       btn_Digit_WasDown = false;
+      
     }
 
     //enable OUTPUT
-    if (btn_Digit_WasDown && btnIsUp(BTN_OUT_EN))
+    if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
-
+      enable_output ? enable_output = false : enable_output = true;
       updateDisplay = true;
-      btn_Digit_WasDown = false;
-
+      btn_EnOut_WasDown = false;
     }
+    
    
     // go back to settings
     if (btn_Change_WasDown && btnIsUp(BTN_CHANGE))
@@ -207,12 +299,12 @@ void page_CurrSettings(void)
       display.setTextSize(3);
       
       if(digit_1 <= 9){
-      display.setCursor(0, 0);
+      display.setCursor(7, 0);
       display.print("0");
-      display.setCursor(18, 0);
+      display.setCursor(25, 0);
       display.print(digit_1);
       }else{
-      display.setCursor(0, 0);
+      display.setCursor(7, 0);
       display.print(digit_1);
       }
 
@@ -228,13 +320,13 @@ void page_CurrSettings(void)
       }
 
       display.setTextSize(2);
-      display.setCursor(36, 8);
+      display.setCursor(38, 8);
       display.print(".");
       display.setCursor(60, 32);
       display.print("mA");
       
       if(cursorPosition == 1){
-        display.drawLine(18, 24, 33, 24, BLACK);
+        display.drawLine(24, 24, 39, 24, BLACK);
       }
       else{
         display.drawLine(66, 24, 81, 24 ,BLACK);
@@ -253,7 +345,6 @@ void page_CurrSettings(void)
 
 
     }
-
 
     captureButtonDownStates();
 
@@ -279,7 +370,7 @@ void page_CurrSettings(void)
       updateDisplay = true;
     }
     
-    // looks for the press release action for OK
+    //
     if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
       cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
@@ -291,8 +382,6 @@ void page_CurrSettings(void)
     if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
       enable_output ? enable_output = false : enable_output = true;
-
-
 
       updateDisplay = true;
       btn_EnOut_WasDown = false;
@@ -313,19 +402,9 @@ void page_CurrSettings(void)
     // keep a specific page
     while (millis() - loopStartMs < 25)
     {
-      delay(200);
+      delay(2); //DELAY is created in argument of this while loop (25ms) 
     }
 
-    //PRINT debbug section 
-    PRINT(enable_output);
-    PRINT(current_value);
-    PRINT(current_value_hex);
-
-    if(debbug){
-      for(int i = 0; i <= 2; i++){
-        PRINT(" ");
-      }
-    }
   }
 }
 
