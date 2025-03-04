@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
-const char BTN_DIGIT = A2; // temporary swap A0 >> A2
+const char BTN_DIGIT = A3; // temporary swap A0 >> A2
 const char BTN_CHANGE = A1; 
-const char BTN_OUT_EN = A0;
+const char BTN_OUT_EN = A2;
 
 const char BTN_error = A5;
 const char BTN_sense_voltage = A6;

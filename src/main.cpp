@@ -126,22 +126,22 @@ void page_VoltSettings(void)
         
         int v_digit_1;
         float v_digit_2;
-        float tempV = voltage_value;
+        float voltage_value_absolute = voltage_value;
 
         if(voltage_value < 0){
-          tempV *= -1;
+          voltage_value_absolute *= -1;
           // minus graphic
           display.drawLine(0, 10, 4, 10, BLACK);
           display.drawLine(0, 11, 4, 11, BLACK);
         };
 
         //digit calculation before print
-        v_digit_1 = (int)tempV;
-        v_digit_2 = ((float)tempV - v_digit_1) * 100; 
-        
+        v_digit_1 = (int)voltage_value_absolute;
+        v_digit_2 = ((float)voltage_value_absolute - v_digit_1) * 100; 
+    
         display.setTextSize(3);
         
-        if(v_digit_1 <= 9){
+        if(v_digit_1 < 10){
           display.setCursor(7, 0);
           display.print("0");
           display.setCursor(25, 0);
@@ -151,7 +151,7 @@ void page_VoltSettings(void)
           display.print(v_digit_1);
         }
 
-        if(v_digit_2 <= 9){
+        if(v_digit_2 < 10){
           display.setCursor(48, 0);
           display.print("0");
           display.setCursor(66, 0);
@@ -177,20 +177,15 @@ void page_VoltSettings(void)
 
         display.setTextSize(1);
         if(enable_output){
-          display.fillCircle( 6, 41, 6, BLACK);
+          display.fillCircle( 6, 41, 4, BLACK);
+          display.drawCircle( 6, 41, 6, BLACK);
         }else{
           display.drawCircle( 6, 41, 6, BLACK);
         }
-        signal_output(set_bi_volage_mode, &voltage_value_hex);
-        //PRINT debbug section 
-        PRINT(tempV);
-        PRINT(voltage_value);
-        PRINT(voltage_value_hex);
-        PRINT(enable_output);
 
-        for(int i = 0; i > 10; i++)
+        for(int i = 0; i > 10; i++){
         PRINT(" ");
-
+        }
         display.display();
       }
   
@@ -198,20 +193,38 @@ void page_VoltSettings(void)
    
     //setting current values 
     if(lastCount != counter){
-      
+      float old = voltage_value;
+
       if(lastCount < counter){ 
         if(lastCount < counter && (lastCount + 10) < counter){
           cursorPosition == 1 ? voltage_value += 10 : voltage_value += 0.1;
             
-        }else{cursorPosition == 1 ? voltage_value++ : voltage_value += 0.01;}     
-  
-      }
-      else { 
+        }else{
+          if(cursorPosition == 1){
+            voltage_value++;
+
+            if(old < 0.00 &&  old > -1 && old < voltage_value){
+              old *= (-2);
+              voltage_value += old;
+            }
+          }else{voltage_value += 0.01;}     
+        }
+      }else{
         if(lastCount > counter && (lastCount -10) > counter){
           cursorPosition == 1 ? voltage_value -= 10 : voltage_value -= 0.1;
 
-        }else{cursorPosition == 1 ? voltage_value-- : voltage_value -= 0.01;} 
+        }else{  
+          if(cursorPosition == 1){
+            voltage_value--;
+
+            if(old > 0.00 && old < 1 && old > voltage_value){
+              old *= (2);
+              voltage_value -= old;
+            }
+          }else{voltage_value -= 0.01;} 
+        } 
       }
+
       // Ensure the value stays within the specified limits
       voltage_value = constrain(voltage_value, minVoltage, maxVoltage);
       lastCount = counter;
@@ -221,13 +234,15 @@ void page_VoltSettings(void)
     //
     if (enable_output && last_value_change){
 
+      uint16_t just_now;
+      signal_output(mode_set_bi_volage, &voltage_value_hex, &just_now);
       
-      signal_output(set_bi_volage_mode, &voltage_value_hex);
-
-
+      Serial.println(just_now, HEX);
+      Serial.println(voltage_value_hex, HEX);
     }
+    
 
-    // 
+    //swap decimal position
     if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
       cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
@@ -249,6 +264,10 @@ void page_VoltSettings(void)
     if (btn_Change_WasDown && btnIsUp(BTN_CHANGE))
     {
       currPage = CURR_SETTINGS;
+
+      disable_output(mode_set_bi_volage);
+
+      Serial.println(mode_set_bi_volage, HEX);
 
       updateDisplay = true;
       btn_Change_WasDown = false;
@@ -287,6 +306,7 @@ void page_CurrSettings(void)
     {
       updateDisplay = false;
       
+
       int digit_1;
       float digit_2;
 
@@ -332,6 +352,14 @@ void page_CurrSettings(void)
         display.drawLine(66, 24, 81, 24 ,BLACK);
       }
 
+      display.setTextSize(1);
+      if(enable_output){
+        display.fillCircle( 6, 41, 4, BLACK);
+        display.drawCircle( 6, 41, 6, BLACK);
+      }else{
+        display.fillCircle( 6, 41, 4, BLACK);
+      }
+
 
       display.display();
     }
@@ -339,11 +367,8 @@ void page_CurrSettings(void)
     
     int last_value_change = true; //memory, previous value capture
     if (enable_output && last_value_change){
-
-      calculate_hex();
-      signal_output(set_current_mode[1], &current_value_hex);
-
-
+      
+      //signal_output(set_current_mode[1], &current_value_hex);
     }
 
     captureButtonDownStates();

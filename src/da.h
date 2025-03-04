@@ -17,8 +17,8 @@ const uint16_t read_data_register = 0x0001;
 const uint16_t read_control_register = 0x0002;
 
 /// data to set OUTPUT ///
-const uint16_t set_uni_voltage_mode = 0x2001;
-const uint16_t set_bi_volage_mode = 0x2003;
+const uint16_t mode_set_uni_voltage = 0x2001;
+const uint16_t mode_set_bi_volage = 0x2003;
 
 /// data to set output  ///
 // 4-20mA mode 0
@@ -53,14 +53,22 @@ void calculate_hex(void){
   voltage_value_hex = ((voltage_value / 10 + 1) / 2) * 0xFFFF;  //BI
 
 }
+void disable_output(uint16_t disable){
 
-void AD_security_feature(void){
-
+  digitalWrite(SS, LOW);
+  SPI.transfer(operation_set_mode);
+  SPI.transfer16(disable);
+  digitalWrite(SS, HIGH);
+  delay(1);
 }
 
-void signal_output(uint16_t mode_option,volatile uint32_t *signal_value){
+
+void signal_output(uint16_t mode_option,volatile uint32_t *signal_value, uint16_t *just_now){
   
-  calculate_hex();
+  calculate_hex(); 
+  just_now = &mode_option;
+  //for enable outpur via control register
+  mode_option = mode_option | 0x1000;
   
   //1. is needed to set control register (operation)
   digitalWrite(SS, LOW);
@@ -75,6 +83,7 @@ void signal_output(uint16_t mode_option,volatile uint32_t *signal_value){
   SPI.transfer16(*signal_value);
   digitalWrite(SS, HIGH);
   delay(1);
+
 }
 
 void read_register(uint16_t *_register){
