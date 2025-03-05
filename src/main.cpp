@@ -104,10 +104,12 @@ void loop() {
 //==========================================================================//
 void page_VoltSettings(void)
 {
-  // flag for updete dislay
+  // flags
+  boolean first_enable = true;
   boolean updateDisplay = true;
   boolean enable_output = false;
-  boolean last_value_change = true; //memory, previous value capture
+
+  float last_value_change = 0; 
 
   // track when entered top of loop
   uint32_t loopStartMs;
@@ -116,6 +118,7 @@ void page_VoltSettings(void)
   while (true)
   {
     loopStartMs = millis();   // capture start time
+    last_value_change = voltage_value;
 
       if (updateDisplay)
       {
@@ -231,19 +234,8 @@ void page_VoltSettings(void)
       updateDisplay = true;
     }
     
-    //
-    if (enable_output && last_value_change){
-
-      uint16_t just_now;
-      signal_output(mode_set_bi_volage, &voltage_value_hex, &just_now);
-      
-      Serial.println(just_now, HEX);
-      Serial.println(voltage_value_hex, HEX);
-    }
-    
-
     //swap decimal position
-    if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
+    if(btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
       cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
       updateDisplay = true;
@@ -252,16 +244,16 @@ void page_VoltSettings(void)
     }
 
     //enable OUTPUT
-    if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
+    if(btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
       enable_output ? enable_output = false : enable_output = true;
       updateDisplay = true;
+      first_enable = true;
       btn_EnOut_WasDown = false;
     }
     
-   
     // go back to settings
-    if (btn_Change_WasDown && btnIsUp(BTN_CHANGE))
+    if(btn_Change_WasDown && btnIsUp(BTN_CHANGE))
     {
       currPage = CURR_SETTINGS;
 
@@ -275,9 +267,16 @@ void page_VoltSettings(void)
       return;
     }
     
+    //
+    if(enable_output && (voltage_value != last_value_change || first_enable) ){
+
+      uint16_t just_now;
+      signal_output(mode_set_bi_volage, &voltage_value_hex, &just_now);
+      first_enable = false;
+    }
 
     // keep a specific page
-    while (millis() - loopStartMs < 25)
+    while(millis() - loopStartMs < 25)
     {
       delay(2);
     }
@@ -290,9 +289,11 @@ void page_VoltSettings(void)
 //==========================================================================//
 void page_CurrSettings(void)
 {
-  // flag for updete dislay
+  // flag 
+  boolean first_enable = true;
   boolean updateDisplay = true;
   boolean enable_output = false;
+  float last_value_change = 0; //memory, previous value capture
   // track when entered top of loop
   uint32_t loopStartMs;
 
@@ -301,6 +302,8 @@ void page_CurrSettings(void)
   while(true)
   {
     loopStartMs = millis(); 
+    last_value_change = current_value;
+
     //display Graphics
     if (updateDisplay)
     {
@@ -357,18 +360,11 @@ void page_CurrSettings(void)
         display.fillCircle( 6, 41, 4, BLACK);
         display.drawCircle( 6, 41, 6, BLACK);
       }else{
-        display.fillCircle( 6, 41, 4, BLACK);
+        display.drawCircle( 6, 41, 6, BLACK);
       }
 
 
       display.display();
-    }
-
-    
-    int last_value_change = true; //memory, previous value capture
-    if (enable_output && last_value_change){
-      
-      //signal_output(set_current_mode[1], &current_value_hex);
     }
 
     captureButtonDownStates();
@@ -404,10 +400,11 @@ void page_CurrSettings(void)
       
     }
     
+    //
     if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
       enable_output ? enable_output = false : enable_output = true;
-
+      first_enable = true;
       updateDisplay = true;
       btn_EnOut_WasDown = false;
     }
@@ -423,6 +420,12 @@ void page_CurrSettings(void)
       return;
     }
     
+    uint16_t nothing;
+    if (enable_output && (current_value != last_value_change || first_enable)){
+      
+      signal_output(set_current_mode[2], &current_value_hex, &nothing);
+      first_enable = false;
+    }
 
     // keep a specific page
     while (millis() - loopStartMs < 25)

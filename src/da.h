@@ -48,7 +48,7 @@ volatile uint32_t current_value_hex, voltage_value_hex;
 void calculate_hex(void){
 
   //hex value for DA-convertor
-  current_value_hex = (current_value * 0xFFFF) / 20;
+  current_value_hex = (current_value * 0xFFFF) / 24;
   //volatile uint32_t voltage_value_hex = (voltage_value * 0xFFFF) / 20 + 0x7FFF; //UNI
   voltage_value_hex = ((voltage_value / 10 + 1) / 2) * 0xFFFF;  //BI
 
@@ -83,6 +83,10 @@ void signal_output(uint16_t mode_option,volatile uint32_t *signal_value, uint16_
   SPI.transfer16(*signal_value);
   digitalWrite(SS, HIGH);
   delay(1);
+  
+  Serial.println(mode_option, HEX);
+  Serial.println(*signal_value, HEX);
+  PRINT(" ");
 
 }
 
