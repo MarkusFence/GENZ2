@@ -10,6 +10,8 @@ unsigned int _fastIncrement = 10;
 
 volatile int counter = 0;
 
+int lastCount;
+
 void read_encoder() {
   // Encoder interrupt routine for both pins. Updates counter
   // if they are valid and have rotated a full indent
@@ -44,7 +46,7 @@ void read_encoder() {
       changevalue = _fastIncrement * changevalue; 
     }
     _lastDecReadTime = micros();
-    counter = counter + changevalue;              // Update counter
+    counter = counter + changevalue;  // Update counter
  
     encval = 0;
   }

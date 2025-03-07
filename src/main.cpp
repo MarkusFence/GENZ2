@@ -1,34 +1,22 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-#include <Adafruit_GFX.h>
-#include <Adafruit_PCD8544.h>
-
-//#include "avr_debugger.h"
-//#include "avr8-stub.h"
-//#include "app_api.h"
-#include "deb.h"
-
-#define Debbug
-#ifdef Debbug
-  //while not in use, comment also Seial.being 
-  #define PRINT(t) (Serial.println((t)))
-  boolean debbug = true;
-#else
-  boolean debbug = false;
-#endif
+// #include <Adafruit_GFX.h>
+// #include <Adafruit_PCD8544.h>
 
 #include "btnPins.h"
 #include "da.h"
 #include "encoder.h"
 #include "dispGra.h"
+#include "sense.h"
 
+#include "deb.h"
 
 //==========================================================================//
 //------------------------- DISLPAY SETUP
 //==========================================================================//
-#define DCONST 100
-Adafruit_PCD8544 display = Adafruit_PCD8544(6, 5, 4);
+// #define DCONST 100
+// Adafruit_PCD8544 display = Adafruit_PCD8544(6, 5, 4);
 
 
 //==========================================================================//
@@ -44,18 +32,16 @@ enum pageType currPage = VOLT_SETTINGS;
 void page_VoltSettings (void);
 void page_CurrSettings (void);
 
-int lastCount;
-
 //==========================================================================//
 //-------------------------ARDUINO SETUP
 //==========================================================================//
 void setup() {
 
-  //debbug tool - only one at the time can be choosen Seria monitor or AVR-STUB(REAL DEBBUGER)
-  //while using interrupt is not possible use STUB 
-  // debug_init();
+  //PSEUDO DEBBUG TOOL
   Serial.begin(9600);
   Serial.println("DEBBUG BEGIN !!!");
+  //short version of serial print
+  PRINT("YEEEEEET");
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -64,7 +50,7 @@ void setup() {
   SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0)); // Set SPI settings
   pinMode(SS, OUTPUT);                                             // Slave Select pin as OUTPUT
 
-  // nokia display setup
+  // NOKIA display setup
   display.begin();
   display.setContrast(DCONST); // Set contrast to 50
   display.clearDisplay();
@@ -74,8 +60,8 @@ void setup() {
   pinMode(BTN_CHANGE, INPUT_PULLUP);
   pinMode(BTN_OUT_EN, INPUT_PULLUP);
 
-  //encoder dependencies
-  // Set encoder pins and attach interrupts
+  //ENCODER dependencies
+  //Set encoder pins and attach interrupts
   pinMode(ENC_A, INPUT_PULLUP);
   pinMode(ENC_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENC_A), read_encoder, CHANGE);
@@ -87,7 +73,7 @@ void setup() {
 //-------------------------ARDUINO "MAIN"
 //==========================================================================//
 void loop() {
-
+  //MAIN LOOP for jump to sub-loops
   switch (currPage)
   {
   case VOLT_SETTINGS:
@@ -109,92 +95,128 @@ void page_VoltSettings(void)
   boolean updateDisplay = true;
   boolean enable_output = false;
 
-  float last_value_change = 0; 
-
+  //for trigger enable
+  float previous_value = 0; 
+  
   // track when entered top of loop
   uint32_t loopStartMs;
+
   // inner loop
-  // 
   while (true)
   {
     loopStartMs = millis();   // capture start time
-    last_value_change = voltage_value;
+    previous_value = voltage_value;   
 
-      if (updateDisplay)
-      {
-        updateDisplay = false;
-        display.clearDisplay();
-        //display.setTextColor(WHITE,BLACK);
+    //DISPLAY GRAPHICS
+    if (updateDisplay)
+    {
+      updateDisplay = false;
+      display.clearDisplay();
+      //display.setTextColor(WHITE,BLACK);
 
-        
-        int v_digit_1;
-        float v_digit_2;
-        float voltage_value_absolute = voltage_value;
+      
+      int v_digit_1;
+      float v_digit_2;
+      float voltage_value_absolute = voltage_value;
 
-        if(voltage_value < 0){
-          voltage_value_absolute *= -1;
-          // minus graphic
-          display.drawLine(0, 10, 4, 10, BLACK);
-          display.drawLine(0, 11, 4, 11, BLACK);
-        };
+      if(voltage_value < 0){
+        voltage_value_absolute *= -1;
+        // minus graphic
+        display.drawLine(0, 10, 4, 10, BLACK);
+        display.drawLine(0, 11, 4, 11, BLACK);
+      };
 
-        //digit calculation before print
-        v_digit_1 = (int)voltage_value_absolute;
-        v_digit_2 = ((float)voltage_value_absolute - v_digit_1) * 100; 
-    
-        display.setTextSize(3);
-        
-        if(v_digit_1 < 10){
-          display.setCursor(7, 0);
-          display.print("0");
-          display.setCursor(25, 0);
-          display.print(v_digit_1);
-        }else{
-          display.setCursor(7, 0);
-          display.print(v_digit_1);
-        }
-
-        if(v_digit_2 < 10){
-          display.setCursor(48, 0);
-          display.print("0");
-          display.setCursor(66, 0);
-          display.print((int)v_digit_2);
-          display.setCursor(0, 0);
-        }else{
-          display.setCursor(48, 0);
-          display.print((int)v_digit_2);
-        } //dot graphic
-          display.setTextSize(2);
-          display.setCursor(38, 8);
-          display.print(".");
-          //source option
-          display.setCursor(72, 32);
-          display.print("V");
-        
-        if(cursorPosition == 1){
-          display.drawLine(24, 24, 39, 24, BLACK);
-        }
-        else{
-          display.drawLine(66, 24, 81, 24 ,BLACK);
-        }
-
-        display.setTextSize(1);
-        if(enable_output){
-          display.fillCircle( 6, 41, 4, BLACK);
-          display.drawCircle( 6, 41, 6, BLACK);
-        }else{
-          display.drawCircle( 6, 41, 6, BLACK);
-        }
-
-        for(int i = 0; i > 10; i++){
-        PRINT(" ");
-        }
-        display.display();
-      }
+      //digit calculation before print
+      v_digit_1 = (int)voltage_value_absolute;
+      v_digit_2 = ((float)voltage_value_absolute - v_digit_1) * 100; 
   
+      display.setTextSize(3);
+      
+      if(v_digit_1 < 10){
+        display.setCursor(7, 0);
+        display.print("0");
+        display.setCursor(25, 0);
+        display.print(v_digit_1);
+      }else{
+        display.setCursor(7, 0);
+        display.print(v_digit_1);
+      }
+
+      if(v_digit_2 < 10){
+        display.setCursor(48, 0);
+        display.print("0");
+        display.setCursor(66, 0);
+        display.print((int)v_digit_2);
+        display.setCursor(0, 0);
+      }else{
+        display.setCursor(48, 0);
+        display.print((int)v_digit_2);
+      } //dot graphic
+        display.setTextSize(2);
+        display.setCursor(38, 8);
+        display.print(".");
+        //source option
+        display.setCursor(72, 32);
+        display.print("V");
+      
+      if(cursorPosition == 1){
+        display.drawLine(24, 24, 39, 24, BLACK);
+      }
+      else{
+        display.drawLine(66, 24, 81, 24 ,BLACK);
+      }
+
+      display.setTextSize(1);
+      if(enable_output){
+        display.fillCircle( 6, 41, 4, BLACK);
+        display.drawCircle( 6, 41, 6, BLACK);
+      }else{
+        display.drawCircle( 6, 41, 6, BLACK);
+      }
+
+      for(int i = 0; i > 10; i++){
+      PRINT(" ");
+      }
+      display.display();
+    }
+    
+    //BUTTOM UTILITIES
     captureButtonDownStates();
-   
-    //setting current values 
+    //SWAP DECIMAL POSITION
+    if(btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
+    {
+      cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
+      updateDisplay = true;
+      btn_Digit_WasDown = false;
+      
+    }
+
+    //SET ENABLE FLAG TRUE
+    if(btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
+    {
+      enable_output ? enable_output = false : enable_output = true;
+      updateDisplay = true;
+      first_enable = true; //any enable press 
+      btn_EnOut_WasDown = false;
+    }
+    
+    //CHANGE TO CURRENT SOURCE 
+    if(btn_Change_WasDown && btnIsUp(BTN_CHANGE))
+    {
+      currPage = CURR_SETTINGS;
+
+      disable_output(mode_set_bi_volage);
+      Serial.println(mode_set_bi_volage, HEX);
+
+      updateDisplay = true;
+      btn_Change_WasDown = false;
+
+      return;
+    }
+    
+
+
+    //SET VOLTAGE VALUE 
     if(lastCount != counter){
       float old = voltage_value;
 
@@ -233,49 +255,27 @@ void page_VoltSettings(void)
       lastCount = counter;
       updateDisplay = true;
     }
-    
-    //swap decimal position
-    if(btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
-    {
-      cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
-      updateDisplay = true;
-      btn_Digit_WasDown = false;
-      
-    }
 
-    //enable OUTPUT
-    if(btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
-    {
-      enable_output ? enable_output = false : enable_output = true;
-      updateDisplay = true;
-      first_enable = true;
-      btn_EnOut_WasDown = false;
-    }
-    
-    // go back to settings
-    if(btn_Change_WasDown && btnIsUp(BTN_CHANGE))
-    {
-      currPage = CURR_SETTINGS;
 
-      disable_output(mode_set_bi_volage);
-
-      Serial.println(mode_set_bi_volage, HEX);
-
-      updateDisplay = true;
-      btn_Change_WasDown = false;
-
-      return;
-    }
-    
-    //
-    if(enable_output && (voltage_value != last_value_change || first_enable) ){
+    //FINNAL ENABLE
+    if(enable_output && (voltage_value != previous_value || first_enable) ){
 
       uint16_t just_now;
       signal_output(mode_set_bi_volage, &voltage_value_hex, &just_now);
       first_enable = false;
     }
 
-    // keep a specific page
+    //ERROR CHECK
+    if(enable_output){
+
+      voltage_sense = analogRead(BTN_sense_voltage);
+
+
+
+    }
+
+
+    // keep a specific time 
     while(millis() - loopStartMs < 25)
     {
       delay(2);
@@ -302,74 +302,48 @@ void page_CurrSettings(void)
   while(true)
   {
     loopStartMs = millis(); 
-    last_value_change = current_value;
+    last_value_change = current_value; //enable flag output, enable change only every 
 
-    //display Graphics
+    //DISPLAY GRAPHICS
     if (updateDisplay)
     {
       updateDisplay = false;
       
-
-      int digit_1;
-      float digit_2;
-
-      digit_1 = (int)current_value;
-      digit_2 = ((float)current_value - digit_1) * 100; 
-
-      display.clearDisplay();
-      //display.setTextColor(WHITE,BLACK);
-
-      display.setTextSize(3);
+      graphisc_print(enable_output);
+    }
+    
+    //BUTTOM UTILITIES
+    captureButtonDownStates();
+    //CHANGE DIGIT POSITON
+    if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
+    {
+      cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
+      updateDisplay = true;
+      btn_Digit_WasDown = false;
       
-      if(digit_1 <= 9){
-      display.setCursor(7, 0);
-      display.print("0");
-      display.setCursor(25, 0);
-      display.print(digit_1);
-      }else{
-      display.setCursor(7, 0);
-      display.print(digit_1);
-      }
-
-      if(digit_2 <= 9){
-      display.setCursor(48, 0);
-      display.print("0");
-      display.setCursor(66, 0);
-      display.print((int)digit_2);
-      display.setCursor(0, 0);
-      }else{
-      display.setCursor(48, 0);
-      display.print((int)digit_2);
-      }
-
-      display.setTextSize(2);
-      display.setCursor(38, 8);
-      display.print(".");
-      display.setCursor(60, 32);
-      display.print("mA");
-      
-      if(cursorPosition == 1){
-        display.drawLine(24, 24, 39, 24, BLACK);
-      }
-      else{
-        display.drawLine(66, 24, 81, 24 ,BLACK);
-      }
-
-      display.setTextSize(1);
-      if(enable_output){
-        display.fillCircle( 6, 41, 4, BLACK);
-        display.drawCircle( 6, 41, 6, BLACK);
-      }else{
-        display.drawCircle( 6, 41, 6, BLACK);
-      }
-
-
-      display.display();
+    }
+    
+    //SET ENABLE FLAG
+    if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
+    {
+      enable_output ? enable_output = false : enable_output = true;
+      first_enable = true;
+      updateDisplay = true;
+      btn_EnOut_WasDown = false;
     }
 
-    captureButtonDownStates();
+    //SWITCH TO VOLTAGE SOURSE
+    if (btn_Change_WasDown && btnIsUp(BTN_CHANGE))
+    {
+      currPage = VOLT_SETTINGS;
 
-    //setting current values 
+      updateDisplay = true;
+      btn_Change_WasDown = false;
+
+      return;
+    }
+    
+    //SET CURRENT VALUE
     if(lastCount != counter){
       
       if(lastCount < counter){ 
@@ -391,41 +365,23 @@ void page_CurrSettings(void)
       updateDisplay = true;
     }
     
-    //
-    if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
-    {
-      cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
-      updateDisplay = true;
-      btn_Digit_WasDown = false;
-      
-    }
-    
-    //
-    if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
-    {
-      enable_output ? enable_output = false : enable_output = true;
-      first_enable = true;
-      updateDisplay = true;
-      btn_EnOut_WasDown = false;
-    }
-
-    //switch signal source 
-    if (btn_Change_WasDown && btnIsUp(BTN_CHANGE))
-    {
-      currPage = VOLT_SETTINGS;
-
-      updateDisplay = true;
-      btn_Change_WasDown = false;
-
-      return;
-    }
-    
+    //FINAL ENABLE
     uint16_t nothing;
     if (enable_output && (current_value != last_value_change || first_enable)){
       
       signal_output(set_current_mode[2], &current_value_hex, &nothing);
       first_enable = false;
     }
+
+    //ERROR CHECK
+    if(enable_output){
+
+      current_sense = analogRead(BTN_sense_current);
+
+
+
+    }
+    
 
     // keep a specific page
     while (millis() - loopStartMs < 25)

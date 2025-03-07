@@ -1,13 +1,14 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+
 // 1.st 8-bit addresses word to choose operation 
 const byte operation_write_data = 0x01;
 const byte operation_read = 0x02;
 const byte operation_set_mode = 0x55;
 const byte operation_reset = 0x56; // reset all registers
 
-/// nop command ///
+/// NOP VALUES ///
 const uint8_t nop_8 = 0x00;
 const uint16_t nop_16 = 0x0000;
 
@@ -16,9 +17,9 @@ const uint16_t read_status_register = 0x0000;
 const uint16_t read_data_register = 0x0001;
 const uint16_t read_control_register = 0x0002;
 
-/// data to set OUTPUT ///
-const uint16_t mode_set_uni_voltage = 0x2001;
-const uint16_t mode_set_bi_volage = 0x2003;
+/// VOLTAGES MODES (4 POSSIBLE RANGES) ///
+const uint16_t mode_set_uni_voltage = 0x2001; //  0 +10 V
+const uint16_t mode_set_bi_volage = 0x2003;   //-10 +10 V
 
 /// data to set output  ///
 // 4-20mA mode 0
@@ -26,18 +27,14 @@ const uint16_t mode_set_bi_volage = 0x2003;
 // 0-24mA mode 2
 const uint16_t set_current_mode[3] = { 0x2005, 0x2006, 0x2007 };
 
-//for testing purposes
-uint16_t MAX_current_value = 0xFFFF; //max current value
-uint16_t MAX_voltage_value = 0xFFFF; //max voltage value
-
-//value off-set
+//START VALUES 
 volatile float voltage_value = 00.00f;
 volatile float current_value = 00.00f;
 
 //voltage limits
 const int minVoltage = -10;
 const int maxVoltage = 10;
-
+                                  //!!! utility for change min and max values !!!!                  
 //current limits
 const int minCurrent = 0;
 const int maxCurrent = 24;
@@ -48,11 +45,12 @@ volatile uint32_t current_value_hex, voltage_value_hex;
 void calculate_hex(void){
 
   //hex value for DA-convertor
-  current_value_hex = (current_value * 0xFFFF) / 24;
-  //volatile uint32_t voltage_value_hex = (voltage_value * 0xFFFF) / 20 + 0x7FFF; //UNI
-  voltage_value_hex = ((voltage_value / 10 + 1) / 2) * 0xFFFF;  //BI
+  current_value_hex = (current_value * 0xFFFF) / 24;                              //  0  24 mA
+  //volatile uint32_t voltage_value_hex = (voltage_value * 0xFFFF) / 20 + 0x7FFF; //  0 +10 V
+  voltage_value_hex = ((voltage_value / 10 + 1) / 2) * 0xFFFF;                    //-10 +10 V
 
 }
+
 void disable_output(uint16_t disable){
 
   digitalWrite(SS, LOW);
@@ -62,10 +60,10 @@ void disable_output(uint16_t disable){
   delay(1);
 }
 
-
 void signal_output(uint16_t mode_option,volatile uint32_t *signal_value, uint16_t *just_now){
   
   calculate_hex(); 
+
   just_now = &mode_option;
   //for enable outpur via control register
   mode_option = mode_option | 0x1000;
@@ -86,8 +84,7 @@ void signal_output(uint16_t mode_option,volatile uint32_t *signal_value, uint16_
   
   Serial.println(mode_option, HEX);
   Serial.println(*signal_value, HEX);
-  PRINT(" ");
-
+ 
 }
 
 void read_register(uint16_t *_register){
@@ -106,27 +103,3 @@ void read_register(uint16_t *_register){
   digitalWrite(SS, HIGH);
   delay(1);
 }
-
-//BASIC SKELET
-
-// delay(2);
-// digitalWrite(SS, LOW);
-// SPI.transfer(control_register);
-// SPI.transfer16(mode_option);
-// digitalWrite(SS, HIGH);
-// delay(2);
-// digitalWrite(SS, LOW);
-// SPI.transfer(data_registe);
-// SPI.transfer16(voltageOut);
-// digitalWrite(SS, HIGH);
-// delay(2);
-// digitalWrite(SS, LOW);
-// SPI.transfer(reead_back_register);
-// SPI.transfer16(read_status_register);
-// digitalWrite(SS, HIGH);
-// delay(2);
-// digitalWrite(SS, LOW);
-// SPI.transfer(nop8);
-// SPI.transfer16(nop16);
-// digitalWrite(SS, HIGH);
-// delay(2);

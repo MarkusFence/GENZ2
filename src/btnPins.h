@@ -26,8 +26,11 @@ boolean buttonReleased(uint8_t buttonPin, boolean &wasDownFlag)
 //==========================================================================//
 //-------------------------TOOLS - BUTTONS PRESSING
 //==========================================================================//
+
+//risign edge detection
 boolean btnIsDown(int btn)
 {return digitalRead(btn) == LOW && digitalRead(btn) == LOW;} // buttons tested 2x as a bounce methode
+
 boolean btnIsUp(int btn)
 {return digitalRead(btn) == HIGH && digitalRead(btn) == HIGH;}
 
