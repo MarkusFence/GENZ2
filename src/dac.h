@@ -19,13 +19,13 @@ const uint16_t read_control_register = 0x0002;
 
 /// VOLTAGES MODES (4 POSSIBLE RANGES) ///
 const uint16_t mode_set_uni_voltage = 0x2001; //  0 +10 V
-const uint16_t mode_set_bi_volage = 0x2003;   //-10 +10 V
+const uint16_t mode_set_bi_voltage = 0x2003;   //-10 +10 V
 
 /// data to set output  ///
 // 4-20mA mode 0
 // 0-20mA mode 1
 // 0-24mA mode 2
-const uint16_t set_current_mode[3] = { 0x2005, 0x2006, 0x2007 };
+const uint16_t mode_set_current[3] = { 0x2005, 0x2006, 0x2007 };
 
 //START VALUES 
 volatile float voltage_value = 00.00f;
@@ -51,20 +51,21 @@ void calculate_hex(void){
 
 }
 
-void disable_output(uint16_t disable){
+void disable_output(void){
 
   digitalWrite(SS, LOW);
   SPI.transfer(operation_set_mode);
-  SPI.transfer16(disable);
+  SPI.transfer16(0x2000);
   digitalWrite(SS, HIGH);
   delay(1);
+
+  Serial.println("DISABLED!");
 }
 
-void signal_output(uint16_t mode_option,volatile uint32_t *signal_value, uint16_t *just_now){
+void signal_output(uint16_t mode_option,volatile uint32_t *signal_value){
   
   calculate_hex(); 
 
-  just_now = &mode_option;
   //for enable outpur via control register
   mode_option = mode_option | 0x1000;
   
@@ -81,10 +82,14 @@ void signal_output(uint16_t mode_option,volatile uint32_t *signal_value, uint16_
   SPI.transfer16(*signal_value);
   digitalWrite(SS, HIGH);
   delay(1);
-  
+
+  //for debbug
   Serial.println(mode_option, HEX);
   Serial.println(*signal_value, HEX);
- 
+
+  Serial.println(current_value);
+  Serial.println(voltage_value);
+
 }
 
 void read_register(uint16_t *_register){

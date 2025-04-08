@@ -5,10 +5,11 @@
 // #include <Adafruit_PCD8544.h>
 
 #include "btnPins.h"
-#include "da.h"
+#include "dac.h"
 #include "encoder.h"
 #include "dispGra.h"
-#include "sense.h"
+#include "measure.h"
+#include "PowerSaveMode.h"
 
 #include "deb.h"
 
@@ -51,6 +52,10 @@ void setup() {
   pinMode(BTN_CHANGE, INPUT_PULLUP);
   pinMode(BTN_OUT_EN, INPUT_PULLUP);
 
+  pinMode(display_light, OUTPUT);
+  pinMode(power_out, OUTPUT);
+  //pinMode();
+
   //ENCODER dependencies
   //Set encoder pins and attach interrupts
   pinMode(ENC_A, INPUT_PULLUP);
@@ -83,12 +88,11 @@ void page_VoltSettings(void)
 {
   // flags
   boolean first_enable = true;
-  boolean updateDisplay = true;
   boolean enable_output = false;
-
+  boolean old_enable_output = false;
+  boolean updateDisplay = true;
   //for trigger enable
   float previous_value = 0; 
-  
   // track when entered top of loop
   uint32_t loopStartMs;
 
@@ -102,7 +106,7 @@ void page_VoltSettings(void)
     if (updateDisplay)
     {
       updateDisplay = false;
-      graphics_print_VoltSource(enable_output);
+      graphics_print_VoltSource(enable_output, voltage_sense);
     }
     
     //BUTTOM UTILITIES
@@ -120,6 +124,10 @@ void page_VoltSettings(void)
     if(btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
       enable_output ? enable_output = false : enable_output = true;
+
+      if(enable_output){ start_time_power = millis();}
+      if(!enable_output){disable_output();}
+      
       updateDisplay = true;
       first_enable = true; //any enable press 
       btn_EnOut_WasDown = false;
@@ -130,8 +138,8 @@ void page_VoltSettings(void)
     {
       currPage = CURR_SETTINGS;
 
-      disable_output(mode_set_bi_volage);
-      Serial.println(mode_set_bi_volage, HEX);
+      disable_output();
+      Serial.println(mode_set_bi_voltage, HEX);
 
       updateDisplay = true;
       btn_Change_WasDown = false;
@@ -139,7 +147,6 @@ void page_VoltSettings(void)
       return;
     }
     
-
 
     //SET VOLTAGE VALUE 
     if(lastCount != counter){
@@ -181,21 +188,34 @@ void page_VoltSettings(void)
       updateDisplay = true;
     }
 
+    if(enable_output){
+
+      power(true);
+    }
 
     //FINNAL ENABLE
-    if(enable_output && (voltage_value != previous_value || first_enable) ){
+    if(enable_output && (voltage_value != previous_value || first_enable)){
 
-      uint16_t just_now;
-      signal_output(mode_set_bi_volage, &voltage_value_hex, &just_now);
+      signal_output(mode_set_bi_voltage, &voltage_value_hex);
+
       first_enable = false;
+      old_enable_output = enable_output;
+
+    //}else if(!enable_output && old_enable_output){
+      
+    //   disable_output();
+    //   old_enable_output = enable_output;
+
+    //   Serial.println(mode_set_bi_voltage, HEX);
     }
 
     //ERROR CHECK
-    if(enable_output){
+    if(enable_output && time_to_measure){
 
       voltage_sense = analogRead(BTN_sense_voltage);
+      updateDisplay = true;
 
-
+      //PRINT(voltage_sense);
 
     }
 
@@ -216,8 +236,10 @@ void page_CurrSettings(void)
 {
   // flag 
   boolean first_enable = true;
-  boolean updateDisplay = true;
   boolean enable_output = false;
+  boolean old_enable_output = false;
+  boolean updateDisplay = true;
+
   float last_value_change = 0; //memory, previous value capture
   // track when entered top of loop
   uint32_t loopStartMs;
@@ -234,11 +256,12 @@ void page_CurrSettings(void)
     {
       updateDisplay = false;
       
-      graphisc_print_CurrSource(enable_output);
+      graphisc_print_CurrSource(enable_output, current_sense);
     }
     
     //BUTTOM UTILITIES
     captureButtonDownStates();
+
     //CHANGE DIGIT POSITON
     if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
@@ -248,10 +271,13 @@ void page_CurrSettings(void)
       
     }
     
-    //SET ENABLE FLAG
+    //SET ENABLE FLAG               BAD NAMEing
     if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
       enable_output ? enable_output = false : enable_output = true;
+
+      if(!enable_output){disable_output();}
+
       first_enable = true;
       updateDisplay = true;
       btn_EnOut_WasDown = false;
@@ -261,6 +287,9 @@ void page_CurrSettings(void)
     if (btn_Change_WasDown && btnIsUp(BTN_CHANGE))
     {
       currPage = VOLT_SETTINGS;
+
+      power(false);
+      disable_output();
 
       updateDisplay = true;
       btn_Change_WasDown = false;
@@ -291,20 +320,27 @@ void page_CurrSettings(void)
     }
     
     //FINAL ENABLE
-    uint16_t nothing;
     if (enable_output && (current_value != last_value_change || first_enable)){
       
-      signal_output(set_current_mode[2], &current_value_hex, &nothing);
+      signal_output(mode_set_current[2], &current_value_hex);
       first_enable = false;
+      old_enable_output = enable_output;
+
+    // }else if( !enable_output && old_enable_output){
+
+    //   disable_output();
+    //   old_enable_output = enable_output;
+
+    //   Serial.println(mode_set_current[0], HEX);
     }
 
     //ERROR CHECK
     if(enable_output){
 
       current_sense = analogRead(BTN_sense_current);
+      updateDisplay = true;
 
-
-
+      PRINT(current_sense);
     }
     
 

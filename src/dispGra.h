@@ -8,13 +8,13 @@
 //------------------------- DISLPAY SETUP
 //==========================================================================//
 #define DCONST 100
-Adafruit_PCD8544 display = Adafruit_PCD8544(6, 5, 4);
+Adafruit_PCD8544 display = Adafruit_PCD8544(6, 5, 8); //9 pin is NC new folow (no reset needed)
 
 //graphical digit pointer 
 int cursorPosition = 1;
 
 //GRAPHICS FOR CURRENT SOURCE
-void graphisc_print_CurrSource(boolean enable_output){
+void graphisc_print_CurrSource(boolean enable_output, int sense){
 
     int digit_1;
     float digit_2;
@@ -69,10 +69,13 @@ void graphisc_print_CurrSource(boolean enable_output){
     // display.setCursor(30, 39);
     // display.print("HIGH");
 
-    display.setCursor(21, 28);
-    display.print("BELOW");
-    display.setCursor(21, 39);
-    display.print("LIMIT");
+    // display.setCursor(21, 28);
+    // display.print("BELOW");
+    // display.setCursor(21, 39);
+    // display.print("LIMIT");
+
+    display.setCursor(30, 39);
+    display.print(sense);
 
     if(enable_output){
     display.fillCircle( 6, 41, 4, BLACK);
@@ -85,7 +88,7 @@ void graphisc_print_CurrSource(boolean enable_output){
     display.display();
 }
 
-void graphics_print_VoltSource(boolean enable_output){
+void graphics_print_VoltSource(boolean enable_output, int sense){
 
     display.clearDisplay();
     //display.setTextColor(WHITE,BLACK);
@@ -144,10 +147,12 @@ void graphics_print_VoltSource(boolean enable_output){
 
     display.setTextSize(1);
 
-    display.setCursor(13, 28);
-    display.print("IMPEDANCE");
+    // display.setCursor(13, 28);
+    // display.print("IMPEDANCE");
+    // display.setCursor(30, 39);
+    // display.print("LOW");
     display.setCursor(30, 39);
-    display.print("LOW");
+    display.print(sense);
 
 
 
