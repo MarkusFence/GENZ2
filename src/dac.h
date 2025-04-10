@@ -58,11 +58,12 @@ void disable_output(void){
   SPI.transfer16(0x2000);
   digitalWrite(SS, HIGH);
   delay(1);
-
+  //for debbug /////////////////////////////////////////////////////////////////////////////////////////////////
   Serial.println("DISABLED!");
+  Serial.println("--------------------------");
 }
 
-void signal_output(uint16_t mode_option,volatile uint32_t *signal_value){
+void signal_output(uint16_t mode_option, volatile uint32_t *signal_value){
   
   calculate_hex(); 
 
@@ -83,12 +84,16 @@ void signal_output(uint16_t mode_option,volatile uint32_t *signal_value){
   digitalWrite(SS, HIGH);
   delay(1);
 
-  //for debbug
+  //for debbug /////////////////////////////////////////////////////////////////////////////////////////////////
+  Serial.print("mode option   :");
   Serial.println(mode_option, HEX);
+  Serial.print("value         :");
   Serial.println(*signal_value, HEX);
-
+  Serial.print("current value :");
   Serial.println(current_value);
+  Serial.print("volatage value:");
   Serial.println(voltage_value);
+  Serial.println("--------------------------");
 
 }
 

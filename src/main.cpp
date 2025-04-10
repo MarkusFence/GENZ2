@@ -4,12 +4,12 @@
 // #include <Adafruit_GFX.h>
 // #include <Adafruit_PCD8544.h>
 
-#include "btnPins.h"
+#include "buttons.h"
 #include "dac.h"
 #include "encoder.h"
-#include "dispGra.h"
+#include "graphics.h"
 #include "measure.h"
-#include "PowerSaveMode.h"
+#include "power_save.h"
 
 #include "deb.h"
 
@@ -42,12 +42,12 @@ void setup() {
   SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0)); // Set SPI settings
   pinMode(SS, OUTPUT);                                             // Slave Select pin as OUTPUT
 
-  // NOKIA display setup
+  //  NOKIA display setup
   display.begin();
   display.setContrast(DCONST); // Set contrast to 50
   display.clearDisplay();
  
-  // setup the basic I/Os
+  // I/Os SETUP
   pinMode(BTN_DIGIT, INPUT_PULLUP);
   pinMode(BTN_CHANGE, INPUT_PULLUP);
   pinMode(BTN_OUT_EN, INPUT_PULLUP);
@@ -56,13 +56,16 @@ void setup() {
   pinMode(power_out, OUTPUT);
   //pinMode();
 
-  //ENCODER dependencies
-  //Set encoder pins and attach interrupts
+  //  ENCODER setup
+  //  Set encoder pins and attach interrupts
   pinMode(ENC_A, INPUT_PULLUP);
   pinMode(ENC_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENC_A), read_encoder, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENC_B), read_encoder, CHANGE);
 
+  //MAIN POWER DISABLE FOR 1. START
+  power(false);
+  
 }
 
 //==========================================================================//
@@ -89,10 +92,16 @@ void page_VoltSettings(void)
   // flags
   boolean first_enable = true;
   boolean enable_output = false;
-  boolean old_enable_output = false;
+  //boolean p_output = false;
+  boolean error = false;
   boolean updateDisplay = true;
+  boolean darkMode = false;
+
+  uint32_t btn_Digit_RepeatCnt = 0;
+  unsigned long btn_Digit_LastRepeatMs = 0;
+
   //for trigger enable
-  float previous_value = 0; 
+  float previous_value; 
   // track when entered top of loop
   uint32_t loopStartMs;
 
@@ -106,18 +115,30 @@ void page_VoltSettings(void)
     if (updateDisplay)
     {
       updateDisplay = false;
-      graphics_print_VoltSource(enable_output, voltage_sense);
+      graphics_print_VoltSource(enable_output, error, U_sense);
+
+      //PRINT(U_sense);
+
     }
     
     //BUTTOM UTILITIES
     captureButtonDownStates();
+
     //SWAP DECIMAL POSITION
     if(btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
       cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
       updateDisplay = true;
       btn_Digit_WasDown = false;
-      
+      btn_Digit_RepeatCnt = 0;
+    
+    }else if (btnRepeat(btn_Digit_WasDown, &btn_Digit_LastRepeatMs, &btn_Digit_RepeatCnt)){
+      if(btn_Digit_RepeatCnt == 5){
+        darkMode ? darkMode = false : darkMode = true;
+        light(darkMode);
+        Serial.print(" LED ");
+        Serial.println(darkMode);
+      }
     }
 
     //SET ENABLE FLAG TRUE
@@ -125,7 +146,11 @@ void page_VoltSettings(void)
     {
       enable_output ? enable_output = false : enable_output = true;
 
-      if(enable_output){ start_time_power = millis();}
+      // if(enable_output){
+      //   start_time_power = millis();
+      //   p_output = true;
+      // }
+
       if(!enable_output){disable_output();}
       
       updateDisplay = true;
@@ -139,7 +164,6 @@ void page_VoltSettings(void)
       currPage = CURR_SETTINGS;
 
       disable_output();
-      Serial.println(mode_set_bi_voltage, HEX);
 
       updateDisplay = true;
       btn_Change_WasDown = false;
@@ -147,6 +171,14 @@ void page_VoltSettings(void)
       return;
     }
     
+    // //lights ON
+    // if(btn_Digit_WasDown){
+    //   down_time += 1;
+    //   if(down_time < 100){
+    //     down_time = 0;
+    //     PRINT("LED ON");
+    //   }
+    // }
 
     //SET VOLTAGE VALUE 
     if(lastCount != counter){
@@ -188,10 +220,19 @@ void page_VoltSettings(void)
       updateDisplay = true;
     }
 
-    if(enable_output){
 
-      power(true);
+    // //POWER ENABLE 
+    // if(enable_output && p_output){
+
+    //   power(p_output); // +1s delay in power func.  
+    // }
+
+    //POWER SAVING - when to shutdown power
+    if(start_time_power - millis() > interval_power){
+      start_time_power += interval_power;
+      //ower off
     }
+
 
     //FINNAL ENABLE
     if(enable_output && (voltage_value != previous_value || first_enable)){
@@ -199,28 +240,39 @@ void page_VoltSettings(void)
       signal_output(mode_set_bi_voltage, &voltage_value_hex);
 
       first_enable = false;
-      old_enable_output = enable_output;
-
-    //}else if(!enable_output && old_enable_output){
-      
-    //   disable_output();
-    //   old_enable_output = enable_output;
-
-    //   Serial.println(mode_set_bi_voltage, HEX);
     }
 
-    //ERROR CHECK
-    if(enable_output && time_to_measure){
+    //MEASURE / ERROR CHECK
+    if(enable_output && time_to_measure(&start_time_Usense, &U_sense, loopStartMs, pin_Usense)){
 
-      voltage_sense = analogRead(BTN_sense_voltage);
+      U_convert(&U_sense);
+
+      if( ((voltage_value - toleration) <= U_sense) && ((voltage_value + toleration) >= U_sense)){
+        error = false;
+        PRINT("NO ERROR");
+      } 
+      else{
+        error = true;
+        PRINT("ERROR");
+      }
+
+      PRINT(U_sense);
+      PRINT("--------------------------");
+
       updateDisplay = true;
-
-      //PRINT(voltage_sense);
-
     }
 
+   
+  //   uint32_t current_time = millis();
+    
+  //   if(current_time - start_time >= interval){ //current time needed maybe
+  //     start_time = current_time;
 
-    // keep a specific time 
+  //     PRINT("measure");
+  // }
+
+
+    //keep a specific time 
     while(millis() - loopStartMs < 25)
     {
       delay(2);
@@ -237,7 +289,7 @@ void page_CurrSettings(void)
   // flag 
   boolean first_enable = true;
   boolean enable_output = false;
-  boolean old_enable_output = false;
+  //boolean old_enable_output = false;
   boolean updateDisplay = true;
 
   float last_value_change = 0; //memory, previous value capture
@@ -256,7 +308,7 @@ void page_CurrSettings(void)
     {
       updateDisplay = false;
       
-      graphisc_print_CurrSource(enable_output, current_sense);
+      graphisc_print_CurrSource(enable_output, I_value);
     }
     
     //BUTTOM UTILITIES
@@ -324,7 +376,7 @@ void page_CurrSettings(void)
       
       signal_output(mode_set_current[2], &current_value_hex);
       first_enable = false;
-      old_enable_output = enable_output;
+    //  old_enable_output = enable_output;
 
     // }else if( !enable_output && old_enable_output){
 
@@ -337,10 +389,8 @@ void page_CurrSettings(void)
     //ERROR CHECK
     if(enable_output){
 
-      current_sense = analogRead(BTN_sense_current);
+      //current_sense = analogRead(BTN_sense_current);
       updateDisplay = true;
-
-      PRINT(current_sense);
     }
     
 

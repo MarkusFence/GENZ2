@@ -8,13 +8,13 @@
 //------------------------- DISLPAY SETUP
 //==========================================================================//
 #define DCONST 100
-Adafruit_PCD8544 display = Adafruit_PCD8544(6, 5, 8); //9 pin is NC new folow (no reset needed)
+Adafruit_PCD8544 display = Adafruit_PCD8544(6, 5, 4); //8 pin is NC new folow (no reset needed)
 
 //graphical digit pointer 
 int cursorPosition = 1;
 
 //GRAPHICS FOR CURRENT SOURCE
-void graphisc_print_CurrSource(boolean enable_output, int sense){
+void graphisc_print_CurrSource(boolean enable_output, float sense){
 
     int digit_1;
     float digit_2;
@@ -88,12 +88,11 @@ void graphisc_print_CurrSource(boolean enable_output, int sense){
     display.display();
 }
 
-void graphics_print_VoltSource(boolean enable_output, int sense){
+void graphics_print_VoltSource(boolean enable_output, boolean error, float sense){
 
     display.clearDisplay();
     //display.setTextColor(WHITE,BLACK);
 
-    
     int v_digit_1;
     float v_digit_2;
     float voltage_value_absolute = voltage_value;

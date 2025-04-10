@@ -1,13 +1,14 @@
 #include <Arduino.h>
 
-const char BTN_DIGIT = A0;
-const char BTN_CHANGE = A2; 
-const char BTN_OUT_EN = A1;
+// const char BTN_DIGIT = A0;
+// const char BTN_CHANGE = A2; 
+// const char BTN_OUT_EN = A1;
 
-const char BTN_error = A3;
+const char BTN_DIGIT = A2;
+const char BTN_CHANGE = A1; 
+const char BTN_OUT_EN = A0;
 
-const char BTN_sense_voltage = A7;
-const char BTN_sense_current = A6;
+//const char BTN_error = A3;
 
 boolean btn_Digit_WasDown = false;
 boolean btn_Change_WasDown = false;
@@ -43,15 +44,12 @@ boolean btnRepeat(boolean btnWasDown, unsigned long *lastRepeatMs, uint32_t *rep
                        currMs >= (*lastRepeatMs + 250 + (50 * (5 - *repeatCnt))) // otherwise calculate a proportional interval to check a
                        ))
     {
-        if (*repeatCnt < 999)
-        {
+        if (*repeatCnt < 999){
             *repeatCnt += 1;
         }
         *lastRepeatMs = currMs;
         return true;
-    }
-    else
-        return false;
+    }else{return false;}
 }
 
 
