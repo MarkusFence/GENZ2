@@ -59,3 +59,4 @@ void captureButtonDownStates()
   if (btnIsDown(BTN_CHANGE)){btn_Change_WasDown = true;}
   if (btnIsDown(BTN_OUT_EN)){btn_EnOut_WasDown = true;}
 }
+

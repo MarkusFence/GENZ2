@@ -5,7 +5,7 @@
 
 unsigned long _lastIncReadTime = micros(); 
 unsigned long int _lastDecReadTime = micros(); 
-unsigned long _pauseLength = 30000;
+unsigned long _pauseLength = 150000;
 unsigned int _fastIncrement = 10;
 
 volatile int counter = 0;

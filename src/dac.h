@@ -28,8 +28,8 @@ const uint16_t mode_set_bi_voltage = 0x2003;   //-10 +10 V
 const uint16_t mode_set_current[3] = { 0x2005, 0x2006, 0x2007 };
 
 //START VALUES 
-volatile float voltage_value = 00.00f;
-volatile float current_value = 00.00f;
+volatile float voltage_value = 12.080f; 
+volatile float current_value = 24.16f;
 
 //voltage limits
 const int minVoltage = -10;
@@ -51,7 +51,7 @@ void calculate_hex(void){
 
 }
 
-void disable_output(void){
+void disable_output(){
 
   digitalWrite(SS, LOW);
   SPI.transfer(operation_set_mode);
@@ -59,8 +59,8 @@ void disable_output(void){
   digitalWrite(SS, HIGH);
   delay(1);
   //for debbug /////////////////////////////////////////////////////////////////////////////////////////////////
-  Serial.println("DISABLED!");
-  Serial.println("--------------------------");
+  // Serial.println("OUT DISABLED!");
+  // Serial.println("--------------------------");
 }
 
 void signal_output(uint16_t mode_option, volatile uint32_t *signal_value){
@@ -85,15 +85,15 @@ void signal_output(uint16_t mode_option, volatile uint32_t *signal_value){
   delay(1);
 
   //for debbug /////////////////////////////////////////////////////////////////////////////////////////////////
-  Serial.print("mode option   :");
-  Serial.println(mode_option, HEX);
-  Serial.print("value         :");
-  Serial.println(*signal_value, HEX);
-  Serial.print("current value :");
-  Serial.println(current_value);
-  Serial.print("volatage value:");
-  Serial.println(voltage_value);
-  Serial.println("--------------------------");
+  // Serial.print("mode option   :");
+  // Serial.println(mode_option, HEX);
+  // Serial.print("value         :");
+  // Serial.println(*signal_value, HEX);
+  // Serial.print("current value :");
+  // Serial.println(current_value);
+  // Serial.print("volatage value:");
+  // Serial.println(voltage_value);
+  // Serial.println("--------------------------");
 
 }
 
