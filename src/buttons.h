@@ -1,14 +1,8 @@
 #include <Arduino.h>
 
-// const char BTN_DIGIT = A0;
-// const char BTN_CHANGE = A2; 
-// const char BTN_OUT_EN = A1;
-
-const char BTN_DIGIT = A2;
-const char BTN_CHANGE = A1; 
-const char BTN_OUT_EN = A0;
-
-//const char BTN_error = A3;
+const char BTN_DIGIT = A0;
+const char BTN_OUT_EN = A1;
+const char BTN_CHANGE = A2; 
 
 boolean btn_Digit_WasDown = false;
 boolean btn_Change_WasDown = false;

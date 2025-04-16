@@ -1,23 +1,25 @@
 #include <Arduino.h>
 
-
 boolean power_enable = false;
-const char display_light = 8;
+
+const char display_light = 4;
 const char power_out_pin = 7;
 
 uint32_t start_time_power = 0;
 uint32_t start_time_light = 25;
 
-const unsigned long interval_power = 15000; //5 min == 3600000 
+const unsigned long interval_power = 7000; //5 min == 3600000 
 const unsigned long interval_light = 20000;
 
-void power(boolean *enable){
+void power(boolean enable){
     if(enable){ 
       digitalWrite(power_out_pin, HIGH);
-      delay(1333);
+      delay(333);
+      Serial.println("P ON");
     }else{ 
       delay(333);
       digitalWrite(power_out_pin, LOW);
+      Serial.println("P OFF");
     }
 }
 void light(boolean enable){

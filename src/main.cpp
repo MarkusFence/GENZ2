@@ -52,7 +52,8 @@ void setup() {
 
   pinMode(display_light, OUTPUT);
   pinMode(power_out_pin, OUTPUT);
-  //pinMode();
+  delay(1333);
+  digitalWrite(display_light, LOW);
 
   //  ENCODER setup
   //  Set encoder pins and attach interrupts
@@ -86,10 +87,9 @@ void page_VoltSettings(void)
 {
   // flags
   boolean first_enable = true;
-  boolean enable_output = false;
-  //boolean p_output = false;
   boolean updateDisplay = true;
   boolean darkMode = false;
+  boolean enable_output = false;
 
   uint32_t btn_Digit_RepeatCnt = 0;
   unsigned long btn_Digit_LastRepeatMs = 0;
@@ -125,7 +125,7 @@ void page_VoltSettings(void)
       btn_Digit_RepeatCnt = 0;
     
     }else if (btnRepeat(btn_Digit_WasDown, &btn_Digit_LastRepeatMs, &btn_Digit_RepeatCnt)){
-      if(btn_Digit_RepeatCnt == 5){
+      if(btn_Digit_RepeatCnt == 3){
         darkMode ? darkMode = false : darkMode = true;
         light(darkMode);
       }
@@ -139,7 +139,7 @@ void page_VoltSettings(void)
       if(enable_output){
         if(!power_enable){
           power_enable = true;
-          power(&power_enable);
+          power(true);
         }
       }
       if(!enable_output){
@@ -149,8 +149,7 @@ void page_VoltSettings(void)
       }
       
       updateDisplay = true;
-      first_enable = true; //any enable press 
-      btn_EnOut_WasDown = false;
+      //first_enable = true; //any enable press 
       btn_Digit_WasDown = false; btn_Change_WasDown = false; btn_EnOut_WasDown = false;
      }
     
@@ -216,7 +215,7 @@ void page_VoltSettings(void)
     //MEASURE / ERROR CHECK
     if((enable_output) && time_to_measure(&start_time_Usense, &U_sense, loopStartMs, pin_Usense)){
       U_convert(&U_sense);
-      test_output(&detection);
+      test_output(&detection, voltage_value, U_sense);
       updateDisplay = true;
     }
 
@@ -231,7 +230,7 @@ void page_VoltSettings(void)
 
       enable_output = false;
       power_enable = false;
-      power(&power_enable);
+      power(false);
       updateDisplay = true;
     }
 
@@ -252,25 +251,28 @@ void page_CurrSettings(void)
 {
   // flag 
   boolean first_enable = true;
-  boolean enable_output = false;
   boolean updateDisplay = true;
-
-  float last_value_change = 0; //memory, previous value capture
+  boolean enable_output = false;
+  boolean darkMode = false;
+  //for long press BTN
+  uint32_t btn_Digit_RepeatCnt = 0;
+  unsigned long btn_Digit_LastRepeatMs = 0;
+  //memory, previous value capture
+  float previous_value = 0; 
   // track when entered top of loop
   uint32_t loopStartMs;
-
 
   // inner loop
   while(true)
   {
     loopStartMs = millis(); 
-    last_value_change = current_value; //enable flag output, enable change only every 
+    previous_value = current_value; //enable flag output, enable change only every 
 
     //DISPLAY GRAPHICS
     if (updateDisplay)
     {
       updateDisplay = false;
-      graphisc_print_CurrSource(enable_output, I_sense, &detection.over_limit, &detection.high_Z);
+      graphisc_print_CurrSource(enable_output, I_sense, &detection.over_limit, &detection.low_Z);
     }
     
     //BUTTOM UTILITIES
@@ -281,8 +283,13 @@ void page_CurrSettings(void)
     {
       cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
       updateDisplay = true;
-      btn_Digit_WasDown = false;
+      btn_Digit_WasDown = false; btn_Change_WasDown = false; btn_EnOut_WasDown = false;
       
+    }else if (btnRepeat(btn_Digit_WasDown, &btn_Digit_LastRepeatMs, &btn_Digit_RepeatCnt)){
+      if(btn_Digit_RepeatCnt == 3){
+        darkMode ? darkMode = false : darkMode = true;
+        light(darkMode);
+      }
     }
     
     //ENABLE FLAG 
@@ -290,23 +297,31 @@ void page_CurrSettings(void)
     {
       enable_output ? enable_output = false : enable_output = true;
 
-      if(!enable_output){disable_output();}
+      if(enable_output){
+        if(!power_enable){
+          power_enable = true;
+          power(true);
+        }
+      }
+      if(!enable_output){
+        disable_output();
+        U_sense = 0;
+        start_time_power = loopStartMs;
+      }
 
-      first_enable = true;
+      //first_enable = true;
       updateDisplay = true;
-      btn_EnOut_WasDown = false;
+      btn_Digit_WasDown = false; btn_Change_WasDown = false; btn_EnOut_WasDown = false;
     }
 
     //SWITCH TO VOLTAGE SOURSE 
     if (btn_Change_WasDown && btnIsUp(BTN_CHANGE))
     {
       currPage = VOLT_SETTINGS;
-
       disable_output();
 
       updateDisplay = true;
       btn_Change_WasDown = false;
-
       return;
     }
     
@@ -332,13 +347,34 @@ void page_CurrSettings(void)
       updateDisplay = true;
     }
     
-    //FINAL ENABLE
-    if (enable_output && (current_value != last_value_change || first_enable)){
+    //FINAL ENABLE FOR CURRENT
+    if (enable_output && (current_value != previous_value || first_enable)){
       
       signal_output(mode_set_current[2], &current_value_hex);
       first_enable = false;
     }
 
+    //MEASURE / ERROR CHECK
+    if((enable_output) && time_to_measure(&start_time_Isense, &I_sense, loopStartMs, pin_Isense)){
+      I_convert(&I_sense);
+      test_output(&detection, current_value, I_sense);
+      updateDisplay = true;
+    }
+
+    //POWER SAVE MODE - LIGHT 
+    if(darkMode && power_save(loopStartMs, &start_time_light, interval_light)){
+      darkMode = false;
+      light(darkMode);
+    }
+
+    //POWER SAVE MODE - MAIN SUPPLY
+    if(power_enable && !enable_output && power_save(loopStartMs, &start_time_power, interval_power)){
+
+      enable_output = false;
+      power_enable = false;
+      power(false);
+      updateDisplay = true;
+    }
     
     // keep a specific page
     while (millis() - loopStartMs < 25)

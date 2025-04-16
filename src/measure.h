@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
-const char pin_Usense = A7;
-const char pin_Isense = A6;
+const char pin_Usense = A3;
+const char pin_Isense = A4;
 
 uint32_t start_time_Usense = 50;
 uint32_t start_time_Isense = 75;
@@ -50,44 +50,44 @@ boolean time_to_measure (uint32_t *start_time_parameter, double *sense_val, uint
  return false;
 } 
 
-void test_output(DetectionFlags *s){
-    if(voltage_value > 0){
-        if( ((voltage_value - toleration) <= U_sense) && ((voltage_value + toleration) >= U_sense)){
+void test_output(DetectionFlags *s, double set_value, double sense_value){
+    Serial.println(set_value);
+    Serial.println(sense_value);
+    if(set_value > 0){
+        if( ((set_value - toleration) <= sense_value) && ((set_value + toleration) >= sense_value)){
             s->low_Z = false;
             s->over_limit = false;
 
             Serial.println("FINE");
         } 
-        else if((voltage_value + toleration) >= U_sense && U_sense > 0){
+        else if((set_value + toleration) >= sense_value && sense_value > 0){
             s->low_Z = true;
             s->over_limit = false;
 
             Serial.println("LOW Z");
-        }else if((voltage_value - toleration) <= U_sense || U_sense < 0){
+        }else if((set_value - toleration) <= sense_value || sense_value < 0){
             s->low_Z = false;
             s->over_limit = true;
 
             Serial.println("EXTERNAL SOURCE");
         }
     }else{
-        if( ((voltage_value - toleration) <= U_sense) && ((voltage_value + toleration) >= U_sense)){
+        if( ((set_value - toleration) <= sense_value) && ((set_value + toleration) >= sense_value)){
             s->low_Z = false;
             s->over_limit = false;
     
             Serial.println("FINE");
 
-        }else if((voltage_value - toleration) >= U_sense || U_sense > 0){
+        }else if((set_value - toleration) >= sense_value || sense_value > 0){
             s->low_Z = false;
             s->over_limit = true;
             Serial.println("EXTERNAL SOURCE");
             
-        }else if((voltage_value + toleration) <= U_sense && U_sense < 0){
+        }else if((set_value + toleration) <= sense_value && sense_value < 0){
             s->low_Z = true;
             s->over_limit = false;
             Serial.println("LOW Z");
-        }else{
-            // s->low_Z = false;
-            // s->over_limit = false;  
         }
     }
 }
+

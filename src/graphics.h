@@ -56,21 +56,21 @@ void graphisc_print_CurrSource(boolean enable_output, float sense, boolean *over
     display.print("mA");
 
     if(cursorPosition == 1){
-    display.drawLine(24, 24, 39, 24, BLACK);
+    display.drawLine(24, 23, 39, 23, BLACK);
     }
     else{
-    display.drawLine(66, 24, 81, 24 ,BLACK);
+    display.drawLine(66, 23, 81, 23 ,BLACK);
     }
 
     display.setTextSize(1);
 
-    if(*overLimit){
+    if(*overLimit && enable_output){
         display.setCursor(19, 25);
         display.print("EXTERNAL");
-        display.setCursor(25, 33);
+        display.setCursor(23, 33);
         display.print("SOURCE");
-    }else if(*Z){
-        display.setCursor(25, 29);
+    }else if(*Z && enable_output){
+        display.setCursor(23, 29);
         display.print("HIGH Z");
     }
 
@@ -164,14 +164,14 @@ void graphics_print_VoltSource(boolean enable_output, float sense, boolean *over
 //==========================================================================//
 //------------------------- DETECTION AND ERROR GRAPHICS
 //==========================================================================//
-
+    
     if(*overLimit && enable_output){
         display.setCursor(19, 25);
         display.print("EXTERNAL");
-        display.setCursor(25, 33);
+        display.setCursor(23, 33);
         display.print("SOURCE");
     }else if(*Z && enable_output){
-        display.setCursor(25, 29);
+        display.setCursor(23, 29);
         display.print(" LOW Z");
     }
 
