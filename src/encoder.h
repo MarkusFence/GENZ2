@@ -10,7 +10,7 @@ unsigned int _fastIncrement = 10;
 
 volatile int counter = 0;
 
-int lastCount;
+int lastCount = 0;
 
 void read_encoder() {
   // Encoder interrupt routine for both pins. Updates counter

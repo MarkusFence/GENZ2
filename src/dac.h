@@ -59,8 +59,8 @@ void disable_output(){
   digitalWrite(SS, HIGH);
   delay(1);
   //for debbug /////////////////////////////////////////////////////////////////////////////////////////////////
-  // Serial.println("OUT DISABLED!");
-  // Serial.println("--------------------------");
+  Serial.println("OUT DISABLED!");
+  Serial.println("--------------------------");
 }
 
 void signal_output(uint16_t mode_option, volatile uint32_t *signal_value){
@@ -91,9 +91,9 @@ void signal_output(uint16_t mode_option, volatile uint32_t *signal_value){
   // Serial.println(*signal_value, HEX);
   // Serial.print("current value :");
   // Serial.println(current_value);
-  // Serial.print("volatage value:");
-  // Serial.println(voltage_value);
-  // Serial.println("--------------------------");
+  Serial.print("volatage value:");
+  Serial.println(voltage_value);
+  Serial.println("--------------------------");
 
 }
 

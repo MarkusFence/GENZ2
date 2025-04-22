@@ -9,7 +9,7 @@ uint32_t start_time_power = 0;
 uint32_t start_time_light = 25;
 
 const unsigned long interval_power = 7000; //5 min == 3600000 
-const unsigned long interval_light = 20000;
+const unsigned long interval_light = 5000;
 
 void power(boolean enable){
     if(enable){ 

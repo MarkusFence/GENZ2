@@ -182,7 +182,7 @@ void page_VoltSettings(void)
               old *= (-2);
               voltage_value += old;
             }
-          }else{voltage_value += 0.01;}     
+            }else{voltage_value += 0.01;}     
         }
       }else{
         if(lastCount > counter && (lastCount -10) > counter){
@@ -254,9 +254,12 @@ void page_CurrSettings(void)
   boolean updateDisplay = true;
   boolean enable_output = false;
   boolean darkMode = false;
+  boolean just_measure = false;
   //for long press BTN
   uint32_t btn_Digit_RepeatCnt = 0;
   unsigned long btn_Digit_LastRepeatMs = 0;
+  uint32_t btn_EnOut_RepeatCnt = 0;
+  unsigned long btn_EnOut_LastRepeatMs = 0;
   //memory, previous value capture
   float previous_value = 0; 
   // track when entered top of loop
@@ -295,8 +298,9 @@ void page_CurrSettings(void)
     //ENABLE FLAG 
     if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
+      if(!just_measure){
       enable_output ? enable_output = false : enable_output = true;
-
+      }
       if(enable_output){
         if(!power_enable){
           power_enable = true;
@@ -312,6 +316,14 @@ void page_CurrSettings(void)
       //first_enable = true;
       updateDisplay = true;
       btn_Digit_WasDown = false; btn_Change_WasDown = false; btn_EnOut_WasDown = false;
+    }else if (btnRepeat(btn_EnOut_WasDown, &btn_EnOut_LastRepeatMs, &btn_EnOut_RepeatCnt)){
+      if(btn_Digit_RepeatCnt == 2){
+
+        just_measure ? just_measure = false : just_measure = true;
+        enable_output = false;
+        updateDisplay = true;
+        Serial.println(just_measure);
+      }
     }
 
     //SWITCH TO VOLTAGE SOURSE 
@@ -355,7 +367,7 @@ void page_CurrSettings(void)
     }
 
     //MEASURE / ERROR CHECK
-    if((enable_output) && time_to_measure(&start_time_Isense, &I_sense, loopStartMs, pin_Isense)){
+    if((enable_output && time_to_measure(&start_time_Isense, &I_sense, loopStartMs, pin_Isense)) || just_measure){
       I_convert(&I_sense);
       test_output(&detection, current_value, I_sense);
       updateDisplay = true;

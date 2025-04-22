@@ -27,7 +27,7 @@ struct DetectionFlags{
 //FOR 10-bit (y) >> y = 39.8444 * x + 485.304
 void U_convert(double *x){
     double y;
-    y = (*x - 490.736) / 40.2903;
+    y = ((*x * 100000) + 342765)/ 4301230;
     *x = y;
 }
 //from real measurements
@@ -37,7 +37,7 @@ void U_convert(double *x){
 //FOR 10-bit (y) >> y = 209.062 * x − 6.04835 
 void I_convert(double *x){
     double y;
-    y = (*x) / 42.3389;
+    y = (*x * 10000 - 4885070)/403251;
     *x = y;
 }
 
