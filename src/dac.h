@@ -28,13 +28,13 @@ const uint16_t mode_set_bi_voltage = 0x2003;   //-10 +10 V
 const uint16_t mode_set_current[3] = { 0x2005, 0x2006, 0x2007 };
 
 //START VALUES 
-volatile float voltage_value = 12.080f; 
-volatile float current_value = 24.16f;
+volatile float voltage_value = 00.00f; 
+volatile float current_value = 00.00f;
 
 //voltage limits
 const int minVoltage = -10;
 const int maxVoltage = 10;
-                                  //!!! utility for change min and max values !!!!                  
+                                             
 //current limits
 const int minCurrent = 0;
 const int maxCurrent = 24;
@@ -91,9 +91,9 @@ void signal_output(uint16_t mode_option, volatile uint32_t *signal_value){
   // Serial.println(*signal_value, HEX);
   // Serial.print("current value :");
   // Serial.println(current_value);
-  Serial.print("volatage value:");
-  Serial.println(voltage_value);
-  Serial.println("--------------------------");
+  // Serial.print("volatage value:");
+  // Serial.println(voltage_value);
+  // Serial.println("--------------------------");
 
 }
 

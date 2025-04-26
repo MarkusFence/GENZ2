@@ -1,9 +1,5 @@
 #include <Arduino.h>
 
-// #include <SPI.h>              included in other .h !!!!!!!!!!!!!
-// #include <Adafruit_GFX.h>
-// #include <Adafruit_PCD8544.h>
-
 #include "buttons.h"
 #include "dac.h"
 #include "encoder.h"
@@ -88,7 +84,6 @@ void page_VoltSettings(void)
   // flags
   boolean first_enable = true;
   boolean updateDisplay = true;
-  boolean darkMode = false;
   boolean enable_output = false;
 
   uint32_t btn_Digit_RepeatCnt = 0;
@@ -109,14 +104,14 @@ void page_VoltSettings(void)
     if (updateDisplay)
     {
       updateDisplay = false;
-      graphics_print_VoltSource(enable_output, U_sense, &detection.over_limit, &detection.low_Z);
+      graphics_print_VoltSource(enable_output, power_enable, U_sense, &detection.over_limit, &detection.low_Z);
       //PRINT(U_sense);
     }
     
     //BUTTOM UTILITIES
     captureButtonDownStates();
 
-    //SWAP DECIMAL POSITION + LED LIGHT
+    //CHANGE DIGIT POSITON + + DISP LIGHT
     if(btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
       cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
@@ -144,8 +139,7 @@ void page_VoltSettings(void)
       }
       if(!enable_output){
         disable_output();
-        U_sense = 0;
-        start_time_power = loopStartMs;
+        start_time_power = loopStartMs; //last disable start count/power saving
       }
       
       updateDisplay = true;
@@ -213,7 +207,7 @@ void page_VoltSettings(void)
     }
 
     //MEASURE / ERROR CHECK
-    if((enable_output) && time_to_measure(&start_time_Usense, &U_sense, loopStartMs, pin_Usense)){
+    if(time_to_measure(&start_time_Usense, &U_sense, loopStartMs, pin_Usense)){
       U_convert(&U_sense);
       test_output(&detection, voltage_value, U_sense);
       updateDisplay = true;
@@ -228,15 +222,14 @@ void page_VoltSettings(void)
     //POWER SAVE MODE - MAIN SUPPLY
     if(power_enable && !enable_output && power_save(loopStartMs, &start_time_power, interval_power)){
 
-      enable_output = false;
       power_enable = false;
       power(false);
       updateDisplay = true;
     }
 
 
-    //keep a specific time 
-    while(millis() - loopStartMs < 25)
+    //keep a specific phase 
+    while(millis() - loopStartMs < 3)
     {
       delay(2);
     }
@@ -253,13 +246,11 @@ void page_CurrSettings(void)
   boolean first_enable = true;
   boolean updateDisplay = true;
   boolean enable_output = false;
-  boolean darkMode = false;
-  boolean just_measure = false;
+
   //for long press BTN
   uint32_t btn_Digit_RepeatCnt = 0;
   unsigned long btn_Digit_LastRepeatMs = 0;
-  uint32_t btn_EnOut_RepeatCnt = 0;
-  unsigned long btn_EnOut_LastRepeatMs = 0;
+  
   //memory, previous value capture
   float previous_value = 0; 
   // track when entered top of loop
@@ -275,18 +266,19 @@ void page_CurrSettings(void)
     if (updateDisplay)
     {
       updateDisplay = false;
-      graphisc_print_CurrSource(enable_output, I_sense, &detection.over_limit, &detection.low_Z);
+      graphics_print_CurrSource(enable_output, power_enable, I_sense, &detection.over_limit, &detection.low_Z);
     }
     
     //BUTTOM UTILITIES
     captureButtonDownStates();
 
-    //CHANGE DIGIT POSITON 
+    //CHANGE DIGIT POSITON + DISP LIGHT
     if (btn_Digit_WasDown && btnIsUp(BTN_DIGIT))
     {
       cursorPosition == 1 ? cursorPosition++ : cursorPosition--;
       updateDisplay = true;
-      btn_Digit_WasDown = false; btn_Change_WasDown = false; btn_EnOut_WasDown = false;
+      btn_Digit_WasDown = false;
+      btn_Digit_RepeatCnt = 0;
       
     }else if (btnRepeat(btn_Digit_WasDown, &btn_Digit_LastRepeatMs, &btn_Digit_RepeatCnt)){
       if(btn_Digit_RepeatCnt == 3){
@@ -298,9 +290,8 @@ void page_CurrSettings(void)
     //ENABLE FLAG 
     if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
-      if(!just_measure){
       enable_output ? enable_output = false : enable_output = true;
-      }
+      
       if(enable_output){
         if(!power_enable){
           power_enable = true;
@@ -309,21 +300,12 @@ void page_CurrSettings(void)
       }
       if(!enable_output){
         disable_output();
-        U_sense = 0;
         start_time_power = loopStartMs;
       }
 
       //first_enable = true;
       updateDisplay = true;
-      btn_Digit_WasDown = false; btn_Change_WasDown = false; btn_EnOut_WasDown = false;
-    }else if (btnRepeat(btn_EnOut_WasDown, &btn_EnOut_LastRepeatMs, &btn_EnOut_RepeatCnt)){
-      if(btn_Digit_RepeatCnt == 2){
-
-        just_measure ? just_measure = false : just_measure = true;
-        enable_output = false;
-        updateDisplay = true;
-        Serial.println(just_measure);
-      }
+      btn_EnOut_WasDown = false;
     }
 
     //SWITCH TO VOLTAGE SOURSE 
@@ -367,12 +349,13 @@ void page_CurrSettings(void)
     }
 
     //MEASURE / ERROR CHECK
-    if((enable_output && time_to_measure(&start_time_Isense, &I_sense, loopStartMs, pin_Isense)) || just_measure){
-      I_convert(&I_sense);
-      test_output(&detection, current_value, I_sense);
-      updateDisplay = true;
+    if(time_to_measure(&start_time_Isense, &I_sense, loopStartMs, pin_Isense)){
+      if(power_enable){
+        test_output(&detection, current_value, I_sense);
+        I_convert(&I_sense);
+      }
+        updateDisplay = true;
     }
-
     //POWER SAVE MODE - LIGHT 
     if(darkMode && power_save(loopStartMs, &start_time_light, interval_light)){
       darkMode = false;
@@ -382,7 +365,6 @@ void page_CurrSettings(void)
     //POWER SAVE MODE - MAIN SUPPLY
     if(power_enable && !enable_output && power_save(loopStartMs, &start_time_power, interval_power)){
 
-      enable_output = false;
       power_enable = false;
       power(false);
       updateDisplay = true;
