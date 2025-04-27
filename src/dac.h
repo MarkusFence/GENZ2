@@ -59,8 +59,8 @@ void disable_output(){
   digitalWrite(SS, HIGH);
   delay(1);
   //for debbug /////////////////////////////////////////////////////////////////////////////////////////////////
-  Serial.println("OUT DISABLED!");
-  Serial.println("--------------------------");
+  // Serial.println("OUT DISABLED!");
+  // Serial.println("--------------------------");
 }
 
 void signal_output(uint16_t mode_option, volatile uint32_t *signal_value){

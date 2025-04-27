@@ -43,8 +43,8 @@ boolean time_to_measure (uint32_t *start_time_parameter, float *sense_val, uint3
 } 
 //error detection 
 void test_output(DetectionFlags *s, float set_value, float sense_value){
-    Serial.println(set_value);
-    Serial.println(sense_value);
+    // Serial.println(set_value);
+    // Serial.println(sense_value);
     if(set_value > 0){
         if( ((set_value - toleration) <= sense_value) && ((set_value + toleration) >= sense_value)){
             s->low_Z = false;

@@ -25,11 +25,11 @@ void page_CurrSettings (void);
 //==========================================================================//
 void setup() {
 
-  //PSEUDO DEBBUG TOOL
-  Serial.begin(9600);
-  Serial.println("DEBBUG BEGIN !!!");
-  //short version of serial print
-  Serial.println("YEEEEEET");
+  // //PSEUDO DEBBUG TOOL
+  // Serial.begin(9600);
+  // Serial.println("DEBBUG BEGIN !!!");
+  // //short version of serial print
+  // Serial.println("YEEEEEET");
 
   //SPI setup
   SPI.begin();                                                     // Initialize SPI
@@ -82,7 +82,7 @@ void loop() {
 void page_VoltSettings(void)
 {
   // flags
-  boolean first_enable = true;
+  boolean toggle_enable = true;
   boolean updateDisplay = true;
   boolean enable_output = false;
 
@@ -129,7 +129,8 @@ void page_VoltSettings(void)
     //SET ENABLE FLAG TRUE
     if(btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
-      enable_output ? enable_output = false : enable_output = true;
+      if(enable_output){enable_output = false; toggle_enable = true;}
+      else{enable_output = true;}
 
       if(enable_output){
         if(!power_enable){
@@ -142,8 +143,7 @@ void page_VoltSettings(void)
         start_time_power = loopStartMs; //last disable start count/power saving
       }
       
-      updateDisplay = true;
-      //first_enable = true; //any enable press 
+      updateDisplay = true; 
       btn_Digit_WasDown = false; btn_Change_WasDown = false; btn_EnOut_WasDown = false;
      }
     
@@ -201,13 +201,13 @@ void page_VoltSettings(void)
     }
 
     //FINNAL ENABLE FOR OUTPUT
-    if(enable_output && (voltage_value != previous_value || first_enable)){
+    if(enable_output && (voltage_value != previous_value || toggle_enable)){
       signal_output(mode_set_bi_voltage, &voltage_value_hex);
-      first_enable = false;
+      toggle_enable = false;
     }
 
     //MEASURE / ERROR CHECK
-    if(time_to_measure(&start_time_Usense, &U_sense, loopStartMs, pin_Usense)){
+    if(power_enable && time_to_measure(&start_time_Usense, &U_sense, loopStartMs, pin_Usense)){
       U_convert(&U_sense);
       test_output(&detection, voltage_value, U_sense);
       updateDisplay = true;
@@ -243,7 +243,7 @@ void page_VoltSettings(void)
 void page_CurrSettings(void)
 {
   // flag 
-  boolean first_enable = true;
+  boolean toggle_enable = true;
   boolean updateDisplay = true;
   boolean enable_output = false;
 
@@ -290,7 +290,8 @@ void page_CurrSettings(void)
     //ENABLE FLAG 
     if (btn_EnOut_WasDown && btnIsUp(BTN_OUT_EN))
     {
-      enable_output ? enable_output = false : enable_output = true;
+      if(enable_output){enable_output = false; toggle_enable = true;}
+      else{enable_output = true;}
       
       if(enable_output){
         if(!power_enable){
@@ -303,7 +304,6 @@ void page_CurrSettings(void)
         start_time_power = loopStartMs;
       }
 
-      //first_enable = true;
       updateDisplay = true;
       btn_EnOut_WasDown = false;
     }
@@ -342,14 +342,14 @@ void page_CurrSettings(void)
     }
     
     //FINAL ENABLE FOR CURRENT
-    if (enable_output && (current_value != previous_value || first_enable)){
+    if (enable_output && (current_value != previous_value || toggle_enable)){
       
       signal_output(mode_set_current[2], &current_value_hex);
-      first_enable = false;
+      toggle_enable = false;
     }
 
     //MEASURE / ERROR CHECK
-    if(time_to_measure(&start_time_Isense, &I_sense, loopStartMs, pin_Isense)){
+    if(power_enable && time_to_measure(&start_time_Isense, &I_sense, loopStartMs, pin_Isense)){
       if(power_enable){
         test_output(&detection, current_value, I_sense);
         I_convert(&I_sense);
